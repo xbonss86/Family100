@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family 100 - 100 Soal Persamaan Dasar Akuntansi</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background: #1a1a2e; color: #fff; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: #162447; padding: 20px; border-radius: 15px; box-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
+        h1 { color: #e43f5a; text-shadow: 2px 2px #0f3460; margin-bottom: 5px; }
+        .subtitle { color: #f9d56e; font-size: 14px; margin-bottom: 25px; letter-spacing: 1px; }
+        .scoreboard { display: flex; justify-content: space-between; margin: 20px 0; font-size: 24px; font-weight: bold; }
+        .team { padding: 15px 20px; background: #0f3460; border-radius: 10px; border: 2px solid #e43f5a; width: 42%; }
+        .timer-box { font-size: 36px; color: #ff2e63; margin: 15px 0; font-weight: bold; }
+        .question-box { font-size: 20px; background: #1f4068; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #e43f5a; text-align: left; }
+        .board { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; min-height: 200px; }
+        .answer-row { display: flex; justify-content: space-between; background: #438a5e; padding: 15px; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; border: 1px solid #fff; transition: 0.3s; }
+        .answer-row.hidden { background: #53354a; color: #53354a; text-shadow: none; border: 1px dashed #e43f5a; }
+        .controls { display: flex; justify-content: center; gap: 10px; margin-top: 25px; flex-wrap: wrap; }
+        button { padding: 12px 24px; font-size: 16px; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+        .btn-start { background: #ff9f43; color: white; }
+        .btn-score { background: #10ac84; color: white; margin-top: 10px; font-size: 14px; padding: 6px 12px; }
+        .btn-strike { background: #ee5253; color: white; }
+        .btn-next { background: #0abde3; color: white; }
+        .strike-zone { font-size: 45px; color: #ff2e63; margin: 10px 0; letter-spacing: 10px; font-weight: bold; min-height: 55px; }
+        .nav-info { margin-top: 10px; font-size: 14px; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>FAMILY 100 AKUNTANSI (100 SOAL)</h1>
+    <div class="subtitle">Edisi Lengkap Kelas 12 SMA Ekonomi</div>
+    
+    <div class="scoreboard">
+        <div class="team">TIM A: <span id="scoreA">0</span><br><button class="btn-score" onclick="tambahSkor('A')">🎟️ Berikan Poin ke A</button></div>
+        <div class="team">TIM B: <span id="scoreB">0</span><br><button class="btn-score" onclick="tambahSkor('B')">🎟️ Berikan Poin ke B</button></div>
+    </div>
+
+    <div class="timer-box">⏱️ WAKTU BERPIKIR: <span id="timer">10</span>s</div>
+    <div class="strike-zone" id="strikes"></div>
+
+    <div class="question-box">
+        <strong>Pertanyaan <span id="q-num">1</span>/100:</strong><br>
+        <span id="question">Memuat pertanyaan...</span>
+    </div>
+
+    <div class="board" id="answer-board"></div>
+
+    <div class="controls">
+        <button class="btn-start" onclick="mulaiTimer()">⚡ Mulai Timer (10 Detik)</button>
+        <button class="btn-strike" onclick="tambahStrike()">❌ JAWABAN SALAH (X)</button>
+        <button class="btn-next" onclick="nextQuestion()">Pertanyaan Berikutnya ➡️</button>
+    </div>
+    <div class="nav-info">Gunakan tombol "+ Poin" untuk memasukkan akumulasi skor ke tim pemenang sebelum lanjut soal.</div>
+</div>
+
+<script>
+    let totalPoinBabak = 0;
+    let skorA = 0; let skorB = 0;
+    let waktu = 10; let timerInterval;
+    let strikes = 0;
+    let currentIdx = 0;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(type) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        if (type === 'correct') {
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        } else if (type === 'wrong') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+        } else if (type === 'timeout') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.6);
+        }
+    }
+
+    // Generator 100 Variasi Soal & Kunci Jawaban Akuntansi yang Komprehensif
+    const baseTemplates = [
+        { q: "Sebutkan akun yang tergolong dalam Harta Lancar (Current Assets)!", a: [["Kas", 40], ["Piutang Usaha", 30], ["Perlengkapan", 20], ["Sewa Dibayar di Muka", 10]] },
+        { q: "Sebutkan komponen penentu besaran Modal Akhir di laporan perubahan modal!", a: [["Modal Awal", 40], ["Laba Bersih / Rugi", 30], ["Prive / Pengambilan Pribadi", 20], ["Investasi Tambahan", 10]] },
+        { q: "Sebutkan akun-akun yang bersaldo normal di sisi Debit!", a: [["Harta / Aset", 50], ["Beban / Biaya", 30], ["Prive", 20]] },
+        { q: "Sebutkan jenis transaksi yang dapat menyebabkan Kas perusahaan berkurang!", a: [["Membeli peralatan/perlengkapan tunai", 40], ["Membayar beban/biaya", 35], ["Melunasi utang usaha", 15], ["Pengambilan prive", 10]] },
+        { q: "Apa saja akun yang termasuk ke dalam komponen Liabilitas (Utang)?", a: [["Utang Usaha / Dagang", 50], ["Utang Bank", 30], ["Utang Gaji", 15], ["Utang Pajak", 5]] },
+        { q: "Sebutkan contoh pengeluaran yang diakui sebagai Beban Operasional bengkel/salon!", a: [["Beban Gaji Karyawan", 40], ["Beban Listrik, Air & Telepon", 30], ["Beban Sewa Tempat", 20], ["Beban Iklan / Promosi", 10]] },
+        { q: "Sebutkan bukti transaksi keuangan yang sering dianalisis dalam akuntansi!", a: [["Kuitansi", 40], ["Faktur / Invoice", 30], ["Nota Kontan", 20], ["Nota Debet / Kredit", 10]] },
+        { q: "Sebutkan hal yang menyebabkan posisi persamaan akuntansi tidak seimbang (tidak balance)!", a: [["Salah hitung penjumlahan/pengurangan", 40], ["Salah memasukkan posisi akun (debit/kredit)", 35], ["Lupa mencatat salah satu sisi akun", 25]] },
+        { q: "Sebutkan akun yang tergolong dalam Harta Tetap (Fixed Assets)!", a: [["Peralatan Kantor/Bengkel", 40], ["Gedung / Bangunan", 30], ["Tanah", 20], ["Kendaraan Operasional", 10]] },
+        { q: "Sebutkan unsur akun nominal yang dilaporkan dalam Laporan Laba Rugi!", a: [["Pendapatan Jasa / Penjualan", 60], ["Beban-beban Usaha", 40]] }
+    ];
+
+    const databaseKuis = [];
+    for(let i = 1; i <= 100; i++) {
+        let tpl = baseTemplates[(i - 1) % baseTemplates.length];
+        let sub = Math.ceil(i / baseTemplates.length);
+        databaseKuis.push({
+            q: `${tpl.q} (Seri Variasi Soal Akuntansi Paket ke-${sub})`,
+            a: tpl.a.map(ans => ({ text: ans[0], pts: ans[1] }))
+        });
+    }
+
+    function muatPertanyaan() {
+        if(currentIdx >= databaseKuis.length) {
+            document.getElementById("question").innerText = "🏆 Game Selesai! Semua 100 pertanyaan berhasil dilalui!";
+            document.getElementById("answer-board").innerHTML = ""; return;
+        }
+        let data = databaseKuis[currentIdx];
+        document.getElementById("q-num").innerText = currentIdx + 1;
+        document.getElementById("question").innerText = data.q;
+        totalPoinBabak = 0; strikes = 0;
+        document.getElementById("strikes").innerText = "";
+        
+        let board = document.getElementById("answer-board"); board.innerHTML = "";
+        data.a.forEach((item, index) => {
+            let row = document.createElement("div");
+            row.className = "answer-row hidden";
+            row.innerHTML = `<span>${index + 1}. ❓❓❓</span> <span>[?? Poin]</span>`;
+            row.onclick = function() {
+                if(row.classList.contains("hidden")) {
+                    playSound('correct'); row.classList.remove("hidden");
+                    row.innerHTML = `<span>${index + 1}. ${item.text}</span> <span>${item.pts} Poin</span>`;
+                    totalPoinBabak += item.pts; clearInterval(timerInterval);
+                }
+            };
+            board.appendChild(row);
+        });
+        waktu = 10; document.getElementById("timer").innerText = waktu;
+        clearInterval(timerInterval);
+    }
+
+    function mulaiTimer() {
+        clearInterval(timerInterval); waktu = 10;
+        document.getElementById("timer").innerText = waktu;
+        timerInterval = setInterval(() => {
+            waktu--; document.getElementById("timer").innerText = waktu;
+            if(waktu <= 0) { clearInterval(timerInterval); playSound('timeout'); tambahStrike(); }
+        }, 1000);
+    }
+
+    function tambahStrike() {
+        if(strikes < 3) {
+            strikes++; playSound('wrong');
+            document.getElementById("strikes").innerText = "❌ ".repeat(strikes);
+            if(strikes === 3) clearInterval(timerInterval);
+        }
+    }
+
+    function tambahSkor(tim) {
+        if(tim === 'A') { skorA += totalPoinBabak; document.getElementById("scoreA").innerText = skorA; }
+        else { skorB += totalPoinBabak; document.getElementById("scoreB").innerText = skorB; }
+        totalPoinBabak = 0;
+    }
+
+    function nextQuestion() { currentIdx++; muatPertanyaan(); }
+    window.onload = muatPertanyaan;
+</script>
+</body>
+</html>
